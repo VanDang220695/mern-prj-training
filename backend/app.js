@@ -27,7 +27,7 @@ app.use((error, req, res, next) => {
 
 mongoose
   .connect(
-    'mongodb+srv://manager:manager@project-1-ok5pa.mongodb.net/places?retryWrites=true&w=majority',
+    'mongodb+srv://manager:manager@project-1-ok5pa.mongodb.net/mern?retryWrites=true&w=majority',
     {
       useNewUrlParser: true,
       useUnifiedTopology: true,
