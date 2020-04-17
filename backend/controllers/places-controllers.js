@@ -1,6 +1,7 @@
 const { validationResult } = require('express-validator');
 const uuid = require('uuid/v4');
 const mongoose = require('mongoose');
+const fs = require('fs');
 
 const HttpError = require('../models/http-error');
 const getCoordsForAddress = require('../utils/location');
@@ -27,12 +28,8 @@ const getPlacesByUserID = async (req, res, next) => {
   let userWithPlaces;
   try {
     userWithPlaces = await User.findById(userId).populate('places');
-    console.log('userWithPlaces', userWithPlaces);
   } catch (error) {
     return next(new HttpError('Something went wrong, could not find a place by userId', 500));
-  }
-  if (!userWithPlaces || userWithPlaces.places.length === 0) {
-    return next(new HttpError('Could not found a place for the provided user id', 404));
   }
   res.json({ places: userWithPlaces.places.map((place) => place.toObject({ getters: true })) });
 };
@@ -42,31 +39,27 @@ const createPlace = async (req, res, next) => {
   if (!errors.isEmpty()) {
     return next(new HttpError('Invalids inputs passed, please check your data.', 400));
   }
-  const { title, description, address, creator } = req.body;
-
-  let coordinates;
-  try {
-    coordinates = await getCoordsForAddress(address);
-  } catch (error) {
-    next(errors);
-  }
-
-  const createdPlace = new Place({
-    id: uuid(),
-    title,
-    description,
-    location: coordinates,
-    address,
-    creator,
-    image:
-      'https://cdn.24h.com.vn/upload/2-2018/images/2018-04-17/1523940026-901-img_9927_vlyo-1523778128-width660height495.jpg',
-  });
+  const { title, description, address } = req.body;
 
   try {
-    const user = await User.findById(creator);
+    const coordinates = await getCoordsForAddress(address);
+    const createdPlace = new Place({
+      id: uuid(),
+      title,
+      description,
+      location: coordinates,
+      address,
+      creator: req.userData.userId,
+      image: req.file.path,
+    });
+    const user = await User.findById(req.userData.userId);
 
     if (!user) {
       return next(new HttpError('Could not find user for provided id', 404));
+    }
+
+    if (user._id.toString() !== req.userData.userId) {
+      return next(new HttpError('You are not allowed to edit this place.', 401));
     }
 
     const sess = await mongoose.startSession();
@@ -75,11 +68,10 @@ const createPlace = async (req, res, next) => {
     user.places.push(createdPlace); // push places to user
     await user.save({ session: sess }); // save transaction
     await sess.commitTransaction();
+    res.status(201).json({ place: createdPlace.toObject({ getters: true }) });
   } catch (error) {
     return next(new HttpError('Creating place failed, please try again', 500));
   }
-
-  res.status(201).json({ place: createdPlace.toObject({ getters: true }) });
 };
 
 const updatePlace = async (req, res, next) => {
@@ -93,6 +85,15 @@ const updatePlace = async (req, res, next) => {
   let place;
   try {
     place = await Place.findById(placeId);
+
+    if (!place) {
+      throw new Error();
+    }
+
+    if (place.creator.toString() !== req.userData.userId) {
+      return next(new HttpError('You are not allowed to edit this place.', 401));
+    }
+
     place.title = title;
     place.description = description;
     await place.save();
@@ -105,11 +106,17 @@ const updatePlace = async (req, res, next) => {
 const deletePlace = async (req, res, next) => {
   const placeId = req.params.pid;
   let place;
+
   try {
     place = await Place.findById(placeId).populate('creator');
     if (!place) {
       return next(new HttpError('Could not find place for this id.', 404));
     }
+
+    if (place.creator.id !== req.userData.userId) {
+      return next(new HttpError('You are not allowed to edit this place.', 401));
+    }
+
     const sess = await mongoose.startSession();
     sess.startTransaction(); // Create transaction
     await place.remove({ session: sess }); // create transaction remove
@@ -119,7 +126,14 @@ const deletePlace = async (req, res, next) => {
   } catch (error) {
     return next(new HttpError('Something went wrong, could not delete place.', 500));
   }
-  res.status(200).json({ message: 'Deleted place' });
+  const imagePath = place.image;
+  fs.unlink(imagePath, (err) => {
+    if (err) {
+      console.log('Error when remove image places link', err);
+      return next(new HttpError('Something went wrong, could not delete place.', 500));
+    }
+    res.status(200).json({ message: 'Deleted place successful' });
+  });
 };
 
 module.exports = {
