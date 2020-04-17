@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import ReactMapGL, { Marker } from 'react-map-gl';
 import classes from 'classnames';
 
-import { MAP_BOX_TOKEN } from '../../../constants';
 import MarkerUrl from '../../../assets/images/location.png';
 
 import './Map.css';
@@ -21,7 +20,7 @@ const MapComponent = (props) => {
     <div className={classes('map', props.className)}>
       <ReactMapGL
         mapStyle='mapbox://sprites/mapbox/outdoors-v11'
-        mapboxApiAccessToken={MAP_BOX_TOKEN}
+        mapboxApiAccessToken={process.env.REACT_APP_MAP_BOX_API_KEY}
         onViewportChange={(newViewport) => setViewPort(newViewport)}
         {...viewport}
       >

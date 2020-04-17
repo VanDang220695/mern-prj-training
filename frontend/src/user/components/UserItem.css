@@ -1,7 +1,7 @@
 .user-item {
   margin: 1rem;
-  width: calc(45% - 2rem);
-  min-width: 17.5rem;
+  width: calc(45% - 2.5rem);
+  min-width: 22rem;
 }
 
 .user-item a {
@@ -21,16 +21,17 @@
 }
 
 .user-item__content {
-  padding: 0;
+  padding: 0 !important;
 }
 
 .user-item__image {
-  width: 4rem;
+  width: 6rem;
   height: 4rem;
   margin-right: 1rem;
+  padding: 10px 0;
 }
 .user-item__info {
-  margin-left: 20px;
+  margin-left: 5px;
 }
 .user-item__info h2 {
   font-size: 1.5rem;

@@ -1,0 +1,9 @@
+{
+  "env": {
+    "DB_USER": "manager",
+    "DB_PASSWORD": "GWtcAk1yRgJQhG3s",
+    "DB_NAME": "mern",
+    "MAP_BOX_KEY": "pk.eyJ1IjoiZGFuZ3RwdnQxOTk1IiwiYSI6ImNrOTNsYmFkMDAzM2IzZnBiZjB5bTdtOXYifQ.SqAa_NbFJuSiPbcSMVrNyg",
+    "JWT_KEY": "supersecret_never_share"
+  }
+}
